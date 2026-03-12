@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import { askAssistant } from '../services/geminiService';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import { format, isToday, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -13,19 +13,14 @@ interface Message {
 }
 
 export function Assistant() {
-  const { data: tasks } = useFirestoreCollection<any>('tasks');
-  const { data: meetings } = useFirestoreCollection<any>('meetings');
-  const { data: logistics } = useFirestoreCollection<any>('logistics');
+  const { data: tasks, loading: loadingTasks } = useFirestoreCollection<any>('tasks');
+  const { data: meetings, loading: loadingMeetings } = useFirestoreCollection<any>('meetings');
+  const { data: logistics, loading: loadingLogistics } = useFirestoreCollection<any>('logistics');
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: '¡Hola Lucas, buen día! ☀️ Soy tu asistente logístico. ¿En qué te puedo ayudar hoy?'
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -38,11 +33,20 @@ export function Assistant() {
 
   const generateContext = () => {
     const todayTasks = tasks.filter(t => !t.completed && t.dueDate && isToday(t.dueDate.toDate()));
+    const overdueTasks = tasks.filter(t => !t.completed && t.dueDate && isPast(t.dueDate.toDate()) && !isToday(t.dueDate.toDate()));
     const todayMeetings = meetings.filter(m => m.date && isToday(m.date.toDate()));
     const pendingLogistics = logistics.filter(l => l.status === 'pending' || l.status === 'in-progress');
 
     let context = `Fecha actual: ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })}\n\n`;
     
+    if (overdueTasks.length > 0) {
+      context += `¡ATENCIÓN! Tareas ATRASADAS (${overdueTasks.length}):\n`;
+      overdueTasks.forEach(t => {
+        context += `- ${t.title} (Venció: ${format(t.dueDate.toDate(), "dd MMM")})\n`;
+      });
+      context += `\n`;
+    }
+
     context += `Tareas pendientes para hoy (${todayTasks.length}):\n`;
     todayTasks.forEach(t => {
       context += `- ${t.title} (Prioridad: ${t.priority})\n`;
@@ -60,6 +64,26 @@ export function Assistant() {
 
     return context;
   };
+
+  useEffect(() => {
+    if (!loadingTasks && !loadingMeetings && !loadingLogistics && !hasInitialized) {
+      setHasInitialized(true);
+      const initGreeting = async () => {
+        setIsLoading(true);
+        const context = generateContext();
+        const prompt = "Acabo de abrir la aplicación. Por favor, dame un saludo inicial corto. Si tengo tareas atrasadas, menciónalas de inmediato para que no las olvide. Si no tengo tareas atrasadas, solo dame un resumen rápido de mi día.";
+        const response = await askAssistant(prompt, context);
+        
+        setMessages([{
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: response
+        }]);
+        setIsLoading(false);
+      };
+      initGreeting();
+    }
+  }, [loadingTasks, loadingMeetings, loadingLogistics, hasInitialized, tasks, meetings, logistics]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
