@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFirestoreCollection, addDocument, updateDocument, deleteDocument } from '../hooks/useFirestore';
-import { CheckSquare, Plus, Trash2, Edit2, CheckCircle2, Circle, Clock, AlertCircle } from 'lucide-react';
-import { format, isPast } from 'date-fns';
+import { CheckSquare, Plus, Trash2, Edit2, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 import { Timestamp } from 'firebase/firestore';
@@ -105,30 +105,23 @@ export function Tasks() {
               {tasks.length === 0 ? (
                 <p className="text-center text-zinc-500 py-12">No tienes tareas pendientes. ¡Buen trabajo!</p>
               ) : (
-                tasks.map((task: any) => {
-                  const isOverdue = !task.completed && task.dueDate && isPast(task.dueDate.toDate());
-                  
-                  return (
+                tasks.map((task: any) => (
                   <motion.li
                     key={task.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className={`flex items-start gap-4 p-4 rounded-2xl border transition-all ${
-                      task.completed 
-                        ? 'bg-zinc-50 border-zinc-100 opacity-60' 
-                        : isOverdue
-                          ? 'bg-red-50 border-red-200 shadow-sm'
-                          : 'bg-white border-zinc-200 hover:border-red-200 hover:shadow-sm'
+                      task.completed ? 'bg-zinc-50 border-zinc-100 opacity-60' : 'bg-white border-zinc-200 hover:border-red-200 hover:shadow-sm'
                     }`}
                   >
-                    <button onClick={() => toggleComplete(task)} className={`mt-1 flex-shrink-0 transition-colors ${isOverdue ? 'text-red-400 hover:text-red-600' : 'text-zinc-400 hover:text-red-600'}`}>
+                    <button onClick={() => toggleComplete(task)} className="mt-1 flex-shrink-0 text-zinc-400 hover:text-red-600 transition-colors">
                       {task.completed ? <CheckCircle2 size={24} className="text-green-500" /> : <Circle size={24} />}
                     </button>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`font-medium text-sm sm:text-base ${task.completed ? 'line-through text-zinc-500' : isOverdue ? 'text-red-900' : 'text-zinc-900'}`}>
+                        <h3 className={`font-medium text-sm sm:text-base ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-900'}`}>
                           {task.title}
                         </h3>
                         {!task.completed && (
@@ -140,18 +133,12 @@ export function Tasks() {
                             {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Media' : 'Baja'}
                           </span>
                         )}
-                        {isOverdue && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700">
-                            <AlertCircle size={12} />
-                            Atrasada
-                          </span>
-                        )}
                       </div>
                       {task.description && (
-                        <p className={`text-sm mt-1 line-clamp-2 ${isOverdue ? 'text-red-700/70' : 'text-zinc-500'}`}>{task.description}</p>
+                        <p className="text-zinc-500 text-sm mt-1 line-clamp-2">{task.description}</p>
                       )}
                       {task.dueDate && (
-                        <p className={`text-xs flex items-center gap-1 mt-2 font-medium ${isOverdue ? 'text-red-600' : 'text-zinc-400'}`}>
+                        <p className="text-xs text-zinc-400 flex items-center gap-1 mt-2 font-medium">
                           <Clock size={12} />
                           {format(task.dueDate.toDate(), "dd MMM, HH:mm", { locale: es })}
                         </p>
@@ -159,16 +146,15 @@ export function Tasks() {
                     </div>
 
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100">
-                      <button onClick={() => openModal(task)} className={`p-2 rounded-lg transition-colors ${isOverdue ? 'text-red-500 hover:text-red-700 hover:bg-red-100' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'}`}>
+                      <button onClick={() => openModal(task)} className="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors">
                         <Edit2 size={16} />
                       </button>
-                      <button onClick={() => handleDelete(task.id)} className={`p-2 rounded-lg transition-colors ${isOverdue ? 'text-red-500 hover:text-red-700 hover:bg-red-100' : 'text-zinc-400 hover:text-red-600 hover:bg-red-50'}`}>
+                      <button onClick={() => handleDelete(task.id)} className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </motion.li>
-                  );
-                })
+                ))
               )}
             </AnimatePresence>
           </ul>

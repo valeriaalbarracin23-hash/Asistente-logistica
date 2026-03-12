@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import { CheckSquare, Calendar, Truck, Clock, AlertCircle } from 'lucide-react';
-import { format, isToday, isPast } from 'date-fns';
+import { format, isToday, isTomorrow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion } from 'motion/react';
 
@@ -11,7 +11,6 @@ export function Dashboard() {
   const { data: logistics, loading: loadingLogistics } = useFirestoreCollection<any>('logistics');
 
   const todayTasks = tasks.filter(t => !t.completed && t.dueDate && isToday(t.dueDate.toDate()));
-  const overdueTasks = tasks.filter(t => !t.completed && t.dueDate && isPast(t.dueDate.toDate()) && !isToday(t.dueDate.toDate()));
   const todayMeetings = meetings.filter(m => m.date && isToday(m.date.toDate()));
   const pendingLogistics = logistics.filter(l => l.status === 'pending' || l.status === 'in-progress');
 
@@ -25,16 +24,6 @@ export function Dashboard() {
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Hola Lucas 👋</h1>
         <p className="text-zinc-500 mt-1">Aquí tienes el resumen de tu día logístico.</p>
       </header>
-
-      {overdueTasks.length > 0 && (
-        <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-          <div>
-            <h3 className="font-bold text-red-900 text-sm">Tienes {overdueTasks.length} {overdueTasks.length === 1 ? 'tarea atrasada' : 'tareas atrasadas'}</h3>
-            <p className="text-red-700 text-xs mt-1">Revisa la sección de tareas para ponerte al día.</p>
-          </div>
-        </motion.div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-3xl shadow-sm border border-zinc-100 flex items-center gap-4">
